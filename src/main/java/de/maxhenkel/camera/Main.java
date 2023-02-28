@@ -13,9 +13,11 @@ import de.maxhenkel.camera.items.ImageItem;
 import de.maxhenkel.camera.net.*;
 import de.maxhenkel.corelib.ClientRegistry;
 import de.maxhenkel.corelib.CommonRegistry;
+import de.maxhenkel.corelib.net.Message;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityType;
@@ -36,6 +38,7 @@ import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.simple.SimpleChannel;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -43,6 +46,11 @@ import net.minecraftforge.registries.RegistryObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
+
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.UUID;
 
 @Mod(Main.MODID)
 public class Main {
@@ -148,5 +156,15 @@ public class Main {
         KEY_PREVIOUS = new KeyMapping("key.previous_image", GLFW.GLFW_KEY_UP, "key.categories.misc");
         event.register(KEY_NEXT);
         event.register(KEY_PREVIOUS);
+    }
+
+    public static void sendImagePacket(Collection<ServerPlayer> players, UUID uuid, BufferedImage image) throws IOException {
+        Message<MessageImage> msg = new MessageImage(uuid, ImageTools.toBytes(image));
+        players.forEach(p -> SIMPLE_CHANNEL.sendTo(msg, p.connection.getConnection(), NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    public static void sendImagePacket(ServerPlayer player, UUID uuid, BufferedImage image) throws IOException {
+        Message<MessageImage> msg = new MessageImage(uuid, ImageTools.toBytes(image));
+        SIMPLE_CHANNEL.sendTo(msg, player.connection.getConnection(), NetworkDirection.PLAY_TO_CLIENT);
     }
 }
